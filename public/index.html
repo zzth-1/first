@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>局域网文件传输</title>
+    <!-- 引入 JSZip 库，用于打包文件夹 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
         body {
@@ -55,6 +57,19 @@
         .btn-danger { background: #b94a4a; color: white; }
         .btn-danger:hover { background: #a13d3d; }
         .btn:disabled { opacity: 0.4; pointer-events: none; }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #1a5c7a;
+            color: #1a5c7a;
+        }
+        .btn-outline.active {
+            background: #1a5c7a;
+            color: white;
+        }
+        .btn-outline:hover {
+            background: #1a5c7a;
+            color: white;
+        }
         .input-group {
             display: flex;
             gap: 8px;
@@ -92,6 +107,31 @@
         }
         .badge.connected { background: #d4eddf; color: #0a4d3a; }
         .badge.room { background: #dce6f0; }
+        .mode-selector {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0;
+            justify-content: center;
+        }
+        .mode-btn {
+            padding: 8px 20px;
+            border: 2px solid #d0dce6;
+            border-radius: 40px;
+            background: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.15s;
+            font-size: 0.9rem;
+            color: #4f6f84;
+        }
+        .mode-btn.active {
+            border-color: #1a5c7a;
+            background: #1a5c7a;
+            color: white;
+        }
+        .mode-btn:hover:not(.active) {
+            border-color: #1a5c7a;
+        }
         .file-drop {
             border: 2px dashed #b8d0e0;
             border-radius: 28px;
@@ -117,7 +157,13 @@
             margin-bottom: 8px;
             border: 1px solid #eaf0f6;
         }
-        .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+        .file-name { 
+            flex: 1; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            white-space: nowrap; 
+            font-weight: 500;
+        }
         .file-size { color: #4f6f84; margin: 0 12px; font-size: 0.85rem; }
         .file-status {
             font-size: 0.8rem;
@@ -127,6 +173,7 @@
             color: #1a3a4a;
         }
         .file-status.done { background: #b8dfce; color: #0a4d3a; }
+        .file-status.packing { background: #f0e6b8; color: #6a5a0a; }
         .actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
         hr { margin: 20px 0; border: none; border-top: 1px solid #e6edf4; }
         .footer { text-align: center; color: #6f8fa3; font-size: 0.8rem; margin-top: 20px; }
@@ -146,13 +193,46 @@
             font-family: monospace;
             font-size: 0.9rem;
         }
+        .file-count {
+            text-align: center;
+            color: #4f6f84;
+            font-size: 0.85rem;
+            margin: 8px 0;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e6edf4;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 12px 0;
+            display: none;
+        }
+        .progress-bar.active {
+            display: block;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: #1a5c7a;
+            border-radius: 3px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        .folder-name {
+            background: #eef3f7;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            color: #1a3a4a;
+            display: inline-block;
+            margin: 4px 0;
+        }
     </style>
 </head>
 <body>
 <div class="container" id="app">
     <h1>📡 局域网快传</h1>
 
-    <!-- 提示信息：终端已显示 IP -->
     <div class="hint">
         💡 请查看 <strong>终端</strong> 中的 "局域网访问" 地址，其他设备使用该地址访问
     </div>
@@ -173,29 +253,71 @@
         <span class="badge" v-else>暂无房间</span>
     </div>
 
-    <div class="file-drop" @dragover.prevent="dragover=true" @dragleave="dragover=false" @drop.prevent="handleDrop" @click="triggerFileInput" :class="{ dragover }">
-        <div style="font-size: 2.4rem; margin-bottom: 6px;">📤</div>
-        <div style="font-weight: 500; color: #1a3a4a;">点击选择文件 或 拖拽到此处</div>
-        <div style="font-size:0.8rem; color:#4f6f84; margin-top:4px;">支持多文件 · 最大 50MB 建议</div>
-        <input type="file" multiple ref="fileInput" @change="handleFiles" />
+    <!-- 模式切换 -->
+    <div class="mode-selector">
+        <button class="mode-btn" :class="{ active: mode === 'file' }" @click="mode = 'file'">
+            📄 传输文件
+        </button>
+        <button class="mode-btn" :class="{ active: mode === 'folder' }" @click="mode = 'folder'">
+            📁 传输文件夹
+        </button>
     </div>
 
+    <!-- 文件/文件夹选择区域 -->
+    <div class="file-drop" @dragover.prevent="dragover=true" @dragleave="dragover=false" @drop.prevent="handleDrop" @click="triggerFileInput" :class="{ dragover }">
+        <div style="font-size: 2.4rem; margin-bottom: 6px;">
+            {{ mode === 'file' ? '📄' : '📁' }}
+        </div>
+        <div style="font-weight: 500; color: #1a3a4a;">
+            {{ mode === 'file' ? '点击选择文件 或 拖拽文件到此处' : '点击选择文件夹 或 拖拽文件夹到此处' }}
+        </div>
+        <div style="font-size:0.8rem; color:#4f6f84; margin-top:4px;">
+            {{ mode === 'file' ? '支持多文件 · 最大 200MB/文件' : '整个文件夹将打包为 ZIP 传输 · 保留完整目录结构' }}
+        </div>
+        <input 
+            type="file" 
+            multiple 
+            ref="fileInput" 
+            @change="handleFiles" 
+            :webkitdirectory="mode === 'folder'"
+            :directory="mode === 'folder'"
+        />
+    </div>
+
+    <!-- 进度条 -->
+    <div class="progress-bar" :class="{ active: packing }">
+        <div class="fill" :style="{ width: packProgress + '%' }"></div>
+    </div>
+
+    <!-- 选中的文件夹信息 -->
+    <div v-if="folderName && mode === 'folder'" style="text-align:center; margin: 6px 0;">
+        <span class="folder-name">📂 {{ folderName }} ({{ fileCount }} 个文件)</span>
+    </div>
+
+    <!-- 文件列表 -->
     <div v-if="files.length">
         <div class="file-item" v-for="(f, i) in files" :key="i">
-            <span class="file-name">{{ f.name }}</span>
+            <span class="file-name">📄 {{ f.displayName || f.name }}</span>
             <span class="file-size">{{ (f.size/1024).toFixed(1) }} KB</span>
-            <span class="file-status" :class="{ done: f.done }">{{ f.done ? '✔ 已发送' : '⏳ 待发' }}</span>
+            <span class="file-status" :class="{ done: f.done, packing: f.packing }">
+                {{ f.packing ? '⏳ 打包中' : f.done ? '✔ 已发送' : '⏳ 待发' }}
+            </span>
         </div>
         <div class="actions">
             <button class="btn" @click="clearFiles">🗑️ 清空</button>
-            <button class="btn btn-primary" @click="sendAllFiles" :disabled="!connected || !files.length || sending">
-                {{ sending ? '发送中...' : '📨 发送全部' }}
+            <button class="btn btn-primary" @click="sendAllFiles" :disabled="!connected || !files.length || sending || packing">
+                {{ packing ? '打包中...' : sending ? '发送中...' : '📨 发送全部' }}
             </button>
         </div>
     </div>
 
     <hr />
-    <div class="footer">💡 同一局域网 · 创建房间获得房间号 · 其他设备输入房间号加入</div>
+    <div class="footer" v-if="mode === 'file'">
+        💡 选择单个或多个文件直接传输
+    </div>
+    <div class="footer" v-else>
+        💡 选择整个文件夹 → 自动打包为 ZIP → 传输 → 接收方下载后解压
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
@@ -203,17 +325,21 @@
     new Vue({
         el: '#app',
         data: {
+            mode: 'file',  // 'file' 或 'folder'
             roomInput: '',
             roomId: '',
             connected: false,
             memberCount: 0,
             files: [],
+            folderName: '',
+            fileCount: 0,
             dragover: false,
             ws: null,
             sending: false,
+            packing: false,
+            packProgress: 0,
         },
         methods: {
-            // WebSocket 连接
             connectWebSocket() {
                 const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
                 const wsUrl = `${protocol}//${location.host}`;
@@ -267,13 +393,11 @@
                         break;
                 }
             },
-            // 创建房间
             createRoom() {
                 this.ensureConnected(() => {
                     this.ws.send(JSON.stringify({ type: 'create-room' }));
                 });
             },
-            // 加入房间
             joinRoom() {
                 const room = this.roomInput.trim();
                 if (!room) return;
@@ -291,56 +415,134 @@
                     };
                 }
             },
-            // 文件选择
             triggerFileInput() {
                 this.$refs.fileInput.click();
             },
             handleFiles(e) {
                 const files = e.target.files;
-                for (const f of files) {
-                    if (f.size > 50 * 1024 * 1024) {
-                        alert(`文件 "${f.name}" 超过 50MB，请压缩后重试`);
-                        continue;
+                if (!files.length) return;
+                
+                if (this.mode === 'file') {
+                    // 文件模式：直接添加文件
+                    this.folderName = '';
+                    this.fileCount = files.length;
+                    for (const f of files) {
+                        if (f.size > 200 * 1024 * 1024) {
+                            alert(`文件 "${f.name}" 超过 200MB，请压缩后重试`);
+                            continue;
+                        }
+                        this.files.push({
+                            name: f.name,
+                            displayName: f.name,
+                            size: f.size,
+                            file: f,
+                            done: false,
+                            packing: false,
+                        });
                     }
-                    this.files.push({
-                        name: f.name,
-                        size: f.size,
-                        file: f,
-                        done: false,
-                    });
+                } else {
+                    // 文件夹模式：打包为 ZIP
+                    const firstPath = files[0].webkitRelativePath || '';
+                    const folderName = firstPath.split('/')[0] || '未命名文件夹';
+                    this.folderName = folderName;
+                    this.fileCount = files.length;
+                    this.files = [];
+                    
+                    for (const f of files) {
+                        if (f.size > 200 * 1024 * 1024) {
+                            alert(`文件 "${f.name}" 超过 200MB，请压缩后重试`);
+                            continue;
+                        }
+                        const relativePath = f.webkitRelativePath || f.name;
+                        this.files.push({
+                            name: relativePath,
+                            displayName: relativePath,
+                            size: f.size,
+                            file: f,
+                            done: false,
+                            packing: false,
+                        });
+                    }
                 }
                 e.target.value = '';
             },
             handleDrop(e) {
                 this.dragover = false;
                 const files = e.dataTransfer.files;
-                for (const f of files) {
-                    if (f.size > 50 * 1024 * 1024) {
-                        alert(`文件 "${f.name}" 超过 50MB，请压缩后重试`);
-                        continue;
+                if (!files.length) return;
+                
+                if (this.mode === 'file') {
+                    // 文件模式：直接添加文件
+                    this.folderName = '';
+                    this.fileCount = files.length;
+                    for (const f of files) {
+                        if (f.size > 200 * 1024 * 1024) {
+                            alert(`文件 "${f.name}" 超过 200MB，请压缩后重试`);
+                            continue;
+                        }
+                        this.files.push({
+                            name: f.name,
+                            displayName: f.name,
+                            size: f.size,
+                            file: f,
+                            done: false,
+                            packing: false,
+                        });
                     }
-                    this.files.push({
-                        name: f.name,
-                        size: f.size,
-                        file: f,
-                        done: false,
-                    });
+                } else {
+                    // 文件夹模式：打包为 ZIP
+                    const firstPath = files[0].webkitRelativePath || '';
+                    const folderName = firstPath.split('/')[0] || '未命名文件夹';
+                    this.folderName = folderName;
+                    this.fileCount = files.length;
+                    this.files = [];
+                    
+                    for (const f of files) {
+                        if (f.size > 200 * 1024 * 1024) {
+                            alert(`文件 "${f.name}" 超过 200MB，请压缩后重试`);
+                            continue;
+                        }
+                        const relativePath = f.webkitRelativePath || f.name;
+                        this.files.push({
+                            name: relativePath,
+                            displayName: relativePath,
+                            size: f.size,
+                            file: f,
+                            done: false,
+                            packing: false,
+                        });
+                    }
                 }
             },
             clearFiles() {
                 this.files = [];
+                this.folderName = '';
+                this.fileCount = 0;
+                this.packProgress = 0;
+                this.packing = false;
+                this.sending = false;
             },
-            sendAllFiles() {
-                if (!this.connected || this.files.length === 0 || this.sending) return;
+            async sendAllFiles() {
+                if (!this.connected || this.files.length === 0 || this.sending || this.packing) return;
+                
+                if (this.files.every(f => f.done)) {
+                    alert('所有文件已发送！');
+                    return;
+                }
+
+                // 文件夹模式：先打包
+                if (this.mode === 'folder') {
+                    await this.packAndSendFolder();
+                    return;
+                }
+
+                // 文件模式：直接发送
                 this.sending = true;
                 let sentCount = 0;
-                const total = this.files.length;
+                const total = this.files.filter(f => !f.done).length;
 
                 for (const f of this.files) {
-                    if (f.done) {
-                        sentCount++;
-                        continue;
-                    }
+                    if (f.done) continue;
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         const base64 = e.target.result.split(',')[1];
@@ -375,6 +577,94 @@
                     alert('✅ 所有文件已发送！');
                 }
             },
+            async packAndSendFolder() {
+                try {
+                    this.packing = true;
+                    this.packProgress = 0;
+                    
+                    const zip = new JSZip();
+                    
+                    for (const f of this.files) {
+                        const pathParts = f.name.split('/');
+                        let zipPath = f.name;
+                        if (pathParts.length > 1) {
+                            zipPath = pathParts.slice(1).join('/');
+                        }
+                        if (!zipPath) zipPath = f.name;
+                        
+                        f.packing = true;
+                        const fileData = await f.file.arrayBuffer();
+                        zip.file(zipPath, fileData);
+                        f.packing = false;
+                        this.packProgress = Math.min(50, (this.files.filter(f => f.done || !f.packing).length / this.files.length) * 50);
+                    }
+                    
+                    this.packProgress = 60;
+                    const zipBlob = await zip.generateAsync({ 
+                        type: 'blob',
+                        compression: 'DEFLATE',
+                        compressionOptions: { level: 6 }
+                    }, (metadata) => {
+                        this.packProgress = 60 + (metadata.percent / 100) * 35;
+                    });
+                    
+                    this.packProgress = 95;
+                    
+                    const zipFileName = `${this.folderName || '文件夹'}.zip`;
+                    const zipFile = new File([zipBlob], zipFileName, { type: 'application/zip' });
+                    
+                    this.files = [{
+                        name: zipFileName,
+                        displayName: zipFileName,
+                        size: zipFile.size,
+                        file: zipFile,
+                        done: false,
+                        packing: false,
+                    }];
+                    this.folderName = '';
+                    this.fileCount = 1;
+                    
+                    this.packProgress = 100;
+                    this.packing = false;
+                    
+                    // 自动发送 ZIP
+                    this.sending = true;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const base64 = e.target.result.split(',')[1];
+                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            this.ws.send(JSON.stringify({
+                                type: 'file-data',
+                                payload: {
+                                    fileName: zipFileName,
+                                    fileSize: zipFile.size,
+                                    fileDataBase64: base64
+                                }
+                            }));
+                            this.files[0].done = true;
+                            this.sending = false;
+                            alert('✅ 文件夹已打包并发送完成！');
+                            this.packProgress = 0;
+                        } else {
+                            alert('连接已断开，发送失败');
+                            this.sending = false;
+                        }
+                    };
+                    reader.onerror = () => {
+                        alert('读取 ZIP 文件失败');
+                        this.sending = false;
+                        this.packing = false;
+                    };
+                    reader.readAsDataURL(zipFile);
+                    
+                } catch (error) {
+                    console.error('打包失败:', error);
+                    alert('打包文件夹失败: ' + error.message);
+                    this.packing = false;
+                    this.sending = false;
+                    this.packProgress = 0;
+                }
+            },
             downloadFile(fileName, base64Data) {
                 try {
                     const byteCharacters = atob(base64Data);
@@ -391,6 +681,10 @@
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(link.href);
+                    
+                    if (fileName.endsWith('.zip')) {
+                        alert(`✅ 收到 ZIP 文件: ${fileName}\n请解压后查看完整文件夹结构`);
+                    }
                 } catch (e) {
                     alert('文件接收失败：' + e.message);
                 }
