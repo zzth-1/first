@@ -155,18 +155,45 @@ wss.on('connection', (ws, req) => {
     });
 });
 
-// 获取本机局域网 IP（Windows 适用）
+// 获取本机局域网 IP（增强版，自动过滤虚拟网卡）
 function getLocalIP() {
     const { networkInterfaces } = require('os');
     const nets = networkInterfaces();
+    const results = [];
+    
     for (const name of Object.keys(nets)) {
         for (const net of nets[name]) {
             // 跳过内部地址和非 IPv4
             if (net.family === 'IPv4' && !net.internal) {
-                return net.address;
+                // 过滤掉 VMware 虚拟网卡（通常名称包含 VMnet 或 Virtual）
+                if (name.includes('VMnet') || name.includes('Virtual') || name.includes('vEthernet')) {
+                    continue;
+                }
+                results.push({
+                    name: name,
+                    address: net.address
+                });
             }
         }
     }
+    
+    // 如果找到多个，优先返回 WLAN 或 以太网（Ethernet）
+    const priority = results.find(r => 
+        r.name.includes('WLAN') || 
+        r.name.includes('Wi-Fi') || 
+        r.name.includes('以太网') ||
+        r.name.includes('Ethernet')
+    );
+    
+    // 如果找到了优先网卡，返回它；否则返回第一个
+    if (priority) {
+        return priority.address;
+    } else if (results.length > 0) {
+        return results[0].address;
+    }
+    
+    // 如果以上都没找到，提示用户手动输入
+    console.log('\n⚠️ 无法自动获取局域网 IP，请手动输入：');
     return '127.0.0.1';
 }
 
@@ -176,6 +203,13 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('\n✅ 服务已启动！');
     console.log(`   本机访问: http://localhost:${PORT}`);
     console.log(`   局域网访问: http://${ip}:${PORT}`);
+    
+    // 如果 IP 是 127.0.0.1，提示用户手动检查
+    if (ip === '127.0.0.1') {
+        console.log('\n⚠️ 自动获取 IP 失败，请运行 ipconfig 查看实际 IP');
+        console.log(`   然后访问 http://你的实际IP:${PORT}`);
+    }
+    
     console.log(`   (其他设备请使用局域网访问地址)\n`);
     console.log('   按 Ctrl+C 停止服务\n');
 });
