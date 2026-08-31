@@ -1,385 +1,384 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>局域网文件传输</title>
     <style>
-        * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-        body {
-            background: #f0f6fc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 720px;
-            width: 100%;
-            background: #ffffff;
-            border-radius: 40px;
-            padding: 30px 28px;
-            box-shadow: 0 20px 40px rgba(0,20,30,0.08);
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        h1 { margin-top: 0; font-weight: 600; color: #1a3a4a; letter-spacing: -0.02em; }
-        .flex { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-        .btn {
-            padding: 10px 24px;
-            border: none;
-            border-radius: 60px;
-            background: #e4ecf3;
-            color: #1a3a4a;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: 0.15s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-primary { background: #1a5c7a; color: white; }
-        .btn-primary:hover { background: #134b63; }
-        .btn-success { background: #1c8b6c; color: white; }
-        .btn-success:hover { background: #147a5e; }
-        .btn-danger { background: #b94a4a; color: white; }
-        .btn-danger:hover { background: #a13d3d; }
-        .btn:disabled { opacity: 0.4; pointer-events: none; }
-        .input-group {
-            display: flex;
-            gap: 8px;
-            flex: 1;
-            min-width: 200px;
-        }
-        .input-group input {
-            flex: 1;
-            padding: 10px 18px;
-            border-radius: 60px;
-            border: 1px solid #d0dce6;
-            font-size: 1rem;
-            background: #f8fafc;
-            outline: none;
-            transition: 0.15s;
-        }
-        .input-group input:focus { border-color: #1a5c7a; box-shadow: 0 0 0 3px rgba(26,92,122,0.15); }
-        .status-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin: 16px 0 12px;
-            padding: 10px 0;
-            border-top: 1px solid #e6edf4;
-            border-bottom: 1px solid #e6edf4;
-        }
-        .badge {
-            background: #eef3f7;
-            padding: 4px 18px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .badge.connected { background: #d4eddf; color: #0a4d3a; }
-        .badge.room { background: #dce6f0; }
-        .file-drop {
-            border: 2px dashed #b8d0e0;
-            border-radius: 28px;
-            padding: 40px 12px;
-            text-align: center;
-            margin: 18px 0;
-            cursor: pointer;
-            transition: 0.15s;
-            background: #fafdff;
-        }
-        .file-drop.dragover {
-            background: #eaf2fa;
-            border-color: #1a5c7a;
-        }
-        .file-drop input[type="file"] { display: none; }
-        .file-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f8fafc;
-            padding: 8px 16px 8px 20px;
-            border-radius: 60px;
-            margin-bottom: 8px;
-            border: 1px solid #eaf0f6;
-        }
-        .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-        .file-size { color: #4f6f84; margin: 0 12px; font-size: 0.85rem; }
-        .file-status {
-            font-size: 0.8rem;
-            background: #dce8f0;
-            padding: 2px 16px;
-            border-radius: 40px;
-            color: #1a3a4a;
-        }
-        .file-status.done { background: #b8dfce; color: #0a4d3a; }
-        .actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
-        hr { margin: 20px 0; border: none; border-top: 1px solid #e6edf4; }
-        .footer { text-align: center; color: #6f8fa3; font-size: 0.8rem; margin-top: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2 { margin-bottom: 15px; color: #1a73e8; font-size: 18px; }
+        input, button { padding: 10px 16px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        button { background: #1a73e8; color: white; border: none; cursor: pointer; transition: all 0.2s; }
+        button:hover { background: #1557b0; transform: translateY(-1px); }
+        button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .flex { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .status { padding: 12px; background: #e8f0fe; border-radius: 6px; margin: 10px 0; }
+        .status.connected { background: #d4edda; border: 1px solid #c3e6cb; }
+        .file-list { margin-top: 10px; max-height: 400px; overflow-y: auto; }
+        .file-item { background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e9ecef; }
+        .file-item button { background: #28a745; padding: 6px 12px; font-size: 12px; }
+        .file-item button:hover { background: #218838; }
+        #roomIdDisplay { font-weight: bold; color: #1a73e8; font-size: 20px; }
+        .members { color: #666; font-size: 14px; margin-left: 10px; }
+        input[type="file"] { display: none; }
+        .file-upload-btn { background: #17a2b8; }
+        .file-upload-btn:hover { background: #138496; }
+        .error-msg { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 6px; margin: 10px 0; display: none; }
+        .info-msg { background: #d1ecf1; color: #0c5460; padding: 10px; border-radius: 6px; margin: 10px 0; display: none; }
+        .file-size-limit { color: #999; font-size: 12px; margin-top: 5px; }
+        .progress-container { margin-top: 10px; display: none; }
+        .progress-bar { background: #e9ecef; border-radius: 6px; height: 24px; overflow: hidden; position: relative; }
+        .progress-fill { background: linear-gradient(90deg, #1a73e8, #0d47a1); height: 100%; width: 0%; transition: width 0.3s; }
+        .progress-text { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: white; font-size: 12px; font-weight: bold; }
+        .ip-address { background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 10px 0; border: 2px dashed #1a73e8; }
+        .ip-address code { display: block; padding: 5px 0; font-size: 16px; color: #1a73e8; word-break: break-all; }
+        .ip-label { font-weight: bold; color: #333; font-size: 13px; }
+        .qr-hint { color: #666; font-size: 13px; margin-top: 5px; }
+        @media (max-width: 600px) { .flex { flex-direction: column; align-items: stretch; } }
     </style>
 </head>
 <body>
-<div class="container" id="app">
-    <h1>📡 局域网快传</h1>
+<div class="container">
+    <h1>📁 局域网文件传输</h1>
+    
+    <div class="card">
+        <div class="status" id="status">⏳ 连接中...</div>
+        <div class="error-msg" id="errorMsg"></div>
+        <div class="info-msg" id="infoMsg"></div>
+    </div>
 
-    <div class="flex">
-        <button class="btn btn-primary" @click="createRoom">✨ 创建房间</button>
-        <div class="input-group">
-            <input type="text" v-model="roomInput" placeholder="输入房间号加入" @keyup.enter="joinRoom" />
-            <button class="btn btn-success" @click="joinRoom" :disabled="!roomInput">加入</button>
+    <div class="card" id="ipCard">
+        <h2>📱 手机端访问地址</h2>
+        <div class="ip-address" id="ipDisplay">
+            <div style="color:#999;text-align:center;">获取IP地址中...</div>
+        </div>
+        <div class="qr-hint">💡 确保手机和电脑连接同一个 WiFi</div>
+    </div>
+
+    <div class="card">
+        <h2>📌 房间管理</h2>
+        <div class="flex">
+            <button id="createRoomBtn">➕ 创建房间</button>
+            <input type="text" id="joinRoomInput" placeholder="输入房间号" style="flex:1;">
+            <button id="joinRoomBtn">🔗 加入房间</button>
+        </div>
+        <div style="margin-top: 15px;">
+            <span>当前房间：</span>
+            <span id="roomIdDisplay">未加入</span>
+            <span class="members" id="membersDisplay">（成员：0）</span>
         </div>
     </div>
 
-    <div class="status-bar">
-        <span class="badge" :class="{ connected: connected }">
-            {{ connected ? '🟢 已连接' : '⚪ 未连接' }}
-        </span>
-        <span class="badge room" v-if="roomId">🏠 房间: {{ roomId }} (成员: {{ memberCount }})</span>
-        <span class="badge" v-else>暂无房间</span>
-    </div>
-
-    <div class="file-drop" @dragover.prevent="dragover=true" @dragleave="dragover=false" @drop.prevent="handleDrop" @click="triggerFileInput" :class="{ dragover }">
-        <div style="font-size: 2.4rem; margin-bottom: 6px;">📤</div>
-        <div style="font-weight: 500; color: #1a3a4a;">点击选择文件 或 拖拽到此处</div>
-        <div style="font-size:0.8rem; color:#4f6f84; margin-top:4px;">支持多文件 · 最大 50MB 建议</div>
-        <input type="file" multiple ref="fileInput" @change="handleFiles" />
-    </div>
-
-    <div v-if="files.length">
-        <div class="file-item" v-for="(f, i) in files" :key="i">
-            <span class="file-name">{{ f.name }}</span>
-            <span class="file-size">{{ (f.size/1024).toFixed(1) }} KB</span>
-            <span class="file-status" :class="{ done: f.done }">{{ f.done ? '✔ 已发送' : '⏳ 待发' }}</span>
+    <div class="card" id="fileTransferArea" style="display:none;">
+        <h2>📤 发送文件</h2>
+        <div class="flex">
+            <button class="file-upload-btn" id="fileSelectBtn">📎 选择文件</button>
+            <input type="file" id="fileInput" multiple>
+            <span id="fileInfo"></span>
         </div>
-        <div class="actions">
-            <button class="btn" @click="clearFiles">🗑️ 清空</button>
-            <button class="btn btn-primary" @click="sendAllFiles" :disabled="!connected || !files.length || sending">
-                {{ sending ? '发送中...' : '📨 发送全部' }}
-            </button>
+        <div class="file-size-limit">⚠️ 单个文件限制 50MB</div>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+                <div class="progress-text" id="progressText">0%</div>
+            </div>
+        </div>
+
+        <h2 style="margin-top:20px;">📥 接收到的文件</h2>
+        <div id="fileList" class="file-list">
+            <div style="color:#999;text-align:center;padding:20px;">暂无文件</div>
         </div>
     </div>
-
-    <hr />
-    <div class="footer">💡 同一局域网 · 创建房间获得房间号 · 其他设备输入房间号加入</div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
 <script>
-    new Vue({
-        el: '#app',
-        data: {
-            roomInput: '',
-            roomId: '',
-            connected: false,
-            memberCount: 0,
-            files: [],
-            dragover: false,
-            ws: null,
-            sending: false,
-        },
-        methods: {
-            // WebSocket 连接
-            connectWebSocket() {
-                const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${protocol}//${location.host}`;
-                this.ws = new WebSocket(wsUrl);
-                this.ws.onopen = () => {
-                    console.log('WebSocket 已连接');
-                };
-                this.ws.onmessage = (e) => {
-                    let data;
-                    try { data = JSON.parse(e.data); } catch { return; }
-                    this.handleMessage(data);
-                };
-                this.ws.onclose = () => {
-                    console.log('WebSocket 断开');
-                    this.connected = false;
-                };
-                this.ws.onerror = (err) => {
-                    console.error('WebSocket 错误', err);
-                    alert('连接服务器失败，请检查网络或服务是否运行');
-                };
-            },
-            handleMessage(data) {
-                const { type } = data;
-                switch (type) {
-                    case 'room-created': {
-                        this.roomId = data.roomId;
-                        this.memberCount = data.members;
-                        this.connected = true;
-                        break;
-                    }
-                    case 'joined': {
-                        this.roomId = data.roomId;
-                        this.memberCount = data.members;
-                        this.connected = true;
-                        break;
-                    }
-                    case 'members-update': {
-                        this.memberCount = data.members;
-                        break;
-                    }
-                    case 'file-receive': {
-                        const { fileName, fileSize, fileDataBase64 } = data;
-                        this.downloadFile(fileName, fileDataBase64);
-                        break;
-                    }
-                    case 'error': {
-                        alert('❌ ' + data.message);
-                        break;
-                    }
-                    default:
-                        break;
-                }
-            },
-            // 创建房间
-            createRoom() {
-                this.ensureConnected(() => {
-                    this.ws.send(JSON.stringify({ type: 'create-room' }));
-                });
-            },
-            // 加入房间
-            joinRoom() {
-                const room = this.roomInput.trim();
-                if (!room) return;
-                this.ensureConnected(() => {
-                    this.ws.send(JSON.stringify({ type: 'join-room', roomId: room }));
-                });
-            },
-            ensureConnected(callback) {
-                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                    callback();
-                } else {
-                    this.connectWebSocket();
-                    // 等待连接
-                    this.ws.onopen = () => {
-                        callback();
-                    };
-                    // 如果已经 open，直接调用（但防止重复）
-                }
-            },
-            // 文件选择
-            triggerFileInput() {
-                this.$refs.fileInput.click();
-            },
-            handleFiles(e) {
-                const files = e.target.files;
-                for (const f of files) {
-                    // 简单大小限制（建议不超过 50MB）
-                    if (f.size > 50 * 1024 * 1024) {
-                        alert(`文件 "${f.name}" 超过 50MB，请压缩后重试`);
-                        continue;
-                    }
-                    this.files.push({
-                        name: f.name,
-                        size: f.size,
-                        file: f,
-                        done: false,
-                    });
-                }
-                e.target.value = '';
-            },
-            handleDrop(e) {
-                this.dragover = false;
-                const files = e.dataTransfer.files;
-                for (const f of files) {
-                    if (f.size > 50 * 1024 * 1024) {
-                        alert(`文件 "${f.name}" 超过 50MB，请压缩后重试`);
-                        continue;
-                    }
-                    this.files.push({
-                        name: f.name,
-                        size: f.size,
-                        file: f,
-                        done: false,
-                    });
-                }
-            },
-            clearFiles() {
-                this.files = [];
-            },
-            sendAllFiles() {
-                if (!this.connected || this.files.length === 0 || this.sending) return;
-                this.sending = true;
-                let sentCount = 0;
-                const total = this.files.length;
+    let ws = null;
+    let currentRoom = null;
+    let fileBuffer = {};
 
-                for (const f of this.files) {
-                    if (f.done) {
-                        sentCount++;
-                        continue;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const base64 = e.target.result.split(',')[1]; // 去掉 data:xxx;base64,
-                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                            this.ws.send(JSON.stringify({
-                                type: 'file-data',
-                                payload: {
-                                    fileName: f.name,
-                                    fileSize: f.size,
-                                    fileDataBase64: base64
-                                }
-                            }));
-                            f.done = true;
-                            sentCount++;
-                            if (sentCount === total) {
-                                this.sending = false;
-                                alert('✅ 所有文件已发送！');
-                            }
-                        } else {
-                            alert('连接已断开，发送失败');
-                            this.sending = false;
-                        }
-                    };
-                    reader.onerror = () => {
-                        alert(`读取文件 "${f.name}" 失败`);
-                        this.sending = false;
-                    };
-                    reader.readAsDataURL(f.file);
-                }
-                // 如果所有文件都已标记 done，直接完成
-                if (this.files.every(f => f.done)) {
-                    this.sending = false;
-                    alert('✅ 所有文件已发送！');
-                }
-            },
-            downloadFile(fileName, base64Data) {
-                try {
-                    const byteCharacters = atob(base64Data);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    const byteArray = new Uint8Array(byteNumbers);
-                    const blob = new Blob([byteArray]);
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = fileName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(link.href);
-                } catch (e) {
-                    alert('文件接收失败：' + e.message);
-                }
+    const statusEl = document.getElementById('status');
+    const roomIdDisplay = document.getElementById('roomIdDisplay');
+    const membersDisplay = document.getElementById('membersDisplay');
+    const fileList = document.getElementById('fileList');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    const progressContainer = document.getElementById('progressContainer');
+    const fileTransferArea = document.getElementById('fileTransferArea');
+    const errorMsg = document.getElementById('errorMsg');
+    const infoMsg = document.getElementById('infoMsg');
+    const ipDisplay = document.getElementById('ipDisplay');
+
+    // 获取本机IP（通过API）
+    async function getLocalIPs() {
+        try {
+            const response = await fetch('/api/ips');
+            const ips = await response.json();
+            return ips;
+        } catch (e) {
+            console.error('获取IP失败:', e);
+            return [];
+        }
+    }
+
+    // 显示IP地址
+    async function displayIPs() {
+        const ips = await getLocalIPs();
+        if (ips.length === 0) {
+            ipDisplay.innerHTML = '<div style="color:#999;text-align:center;">无法获取IP地址</div>';
+            return;
+        }
+        
+        let html = '';
+        ips.forEach((ip, index) => {
+            const url = `http://${ip.address}:${window.location.port}`;
+            html += `
+                <div style="margin: 8px 0; padding: 8px; background: white; border-radius: 4px; border-left: 3px solid #1a73e8;">
+                    <span class="ip-label">${ip.name}：</span>
+                    <code style="display:inline; font-size: 16px; color: #1a73e8;">${url}</code>
+                    <button onclick="copyToClipboard('${url}')" style="margin-left:10px;padding:4px 10px;font-size:12px;background:#6c757d;">复制</button>
+                </div>
+            `;
+        });
+        ipDisplay.innerHTML = html;
+    }
+
+    // 复制到剪贴板
+    window.copyToClipboard = function(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            showInfo('已复制到剪贴板');
+        }).catch(() => {
+            // 降级方案
+            const input = document.createElement('input');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            showInfo('已复制到剪贴板');
+        });
+    };
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = 'block';
+        setTimeout(() => { errorMsg.style.display = 'none'; }, 5000);
+    }
+
+    function showInfo(msg) {
+        infoMsg.textContent = msg;
+        infoMsg.style.display = 'block';
+        setTimeout(() => { infoMsg.style.display = 'none'; }, 3000);
+    }
+
+    function connect() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}`;
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            statusEl.textContent = '✅ 已连接';
+            statusEl.className = 'status connected';
+            showInfo('WebSocket 连接成功！');
+            displayIPs(); // 连接成功后显示IP
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            } catch (e) {
+                console.error('解析消息失败:', e);
             }
-        },
-        mounted() {
-            this.connectWebSocket();
-        },
-        beforeDestroy() {
-            if (this.ws) {
-                this.ws.close();
+        };
+
+        ws.onerror = (error) => {
+            statusEl.textContent = '❌ 连接错误';
+            statusEl.className = 'status';
+            showError('WebSocket 连接错误');
+        };
+
+        ws.onclose = () => {
+            statusEl.textContent = '❌ 已断开连接，尝试重新连接...';
+            statusEl.className = 'status';
+            setTimeout(connect, 3000);
+        };
+    }
+
+    function handleMessage(data) {
+        switch (data.type) {
+            case 'room-created':
+            case 'joined':
+                currentRoom = data.roomId;
+                roomIdDisplay.textContent = currentRoom;
+                membersDisplay.textContent = `（成员：${data.members}）`;
+                fileTransferArea.style.display = 'block';
+                showInfo(`已${data.type === 'room-created' ? '创建' : '加入'}房间：${currentRoom}`);
+                break;
+
+            case 'members-update':
+                if (data.roomId === currentRoom) {
+                    membersDisplay.textContent = `（成员：${data.members}）`;
+                }
+                break;
+
+            case 'file-receive':
+                receiveFile(data);
+                break;
+
+            case 'error':
+                showError(data.message);
+                break;
+
+            default:
+                console.log('未知消息:', data);
+        }
+    }
+
+    function receiveFile(data) {
+        const { fileName, fileSize, fileDataBase64 } = data;
+        const fileId = Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.id = 'file_' + fileId;
+        const sizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+        const sizeKB = (fileSize / 1024).toFixed(1);
+        const sizeDisplay = fileSize > 1024 * 1024 ? `${sizeMB} MB` : `${sizeKB} KB`;
+
+        fileItem.innerHTML = `
+            <span>📄 ${fileName} (${sizeDisplay})</span>
+            <button onclick="downloadFile('${fileId}', '${fileName}', '${fileDataBase64}')">⬇️ 下载</button>
+        `;
+
+        const emptyMsg = fileList.querySelector('div[style]');
+        if (emptyMsg && emptyMsg.style.color === '#999') {
+            fileList.innerHTML = '';
+        }
+        fileList.appendChild(fileItem);
+        fileBuffer[fileId] = fileDataBase64;
+        
+        showInfo(`收到文件：${fileName} (${sizeDisplay})`);
+    }
+
+    window.downloadFile = function(fileId, fileName, base64Data) {
+        try {
+            const binaryString = atob(base64Data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
             }
+            const blob = new Blob([bytes]);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showInfo(`下载完成：${fileName}`);
+        } catch (e) {
+            showError('下载失败：' + e.message);
+        }
+    };
+
+    document.getElementById('createRoomBtn').addEventListener('click', () => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'create-room' }));
+        } else {
+            showError('WebSocket 未连接');
         }
     });
+
+    document.getElementById('joinRoomBtn').addEventListener('click', () => {
+        const roomId = document.getElementById('joinRoomInput').value.trim();
+        if (!roomId) {
+            showError('请输入房间号');
+            return;
+        }
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'join-room', roomId }));
+        } else {
+            showError('WebSocket 未连接');
+        }
+    });
+
+    document.getElementById('fileSelectBtn').addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (!files.length) return;
+
+        const maxSize = 50 * 1024 * 1024;
+        for (const file of files) {
+            if (file.size > maxSize) {
+                showError(`文件 "${file.name}" 超过 50MB 限制`);
+                fileInput.value = '';
+                return;
+            }
+        }
+
+        progressContainer.style.display = 'block';
+        let completed = 0;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const reader = new FileReader();
+            
+            reader.onload = (ev) => {
+                try {
+                    const base64Data = ev.target.result.split(',')[1];
+                    const data = {
+                        type: 'file-data',
+                        payload: {
+                            fileName: file.name,
+                            fileSize: file.size,
+                            fileDataBase64: base64Data
+                        }
+                    };
+                    ws.send(JSON.stringify(data));
+                    
+                    completed++;
+                    const progress = (completed / files.length) * 100;
+                    progressFill.style.width = progress + '%';
+                    progressText.textContent = Math.round(progress) + '%';
+                    
+                    if (completed === files.length) {
+                        fileInfo.textContent = `✅ 已发送 ${files.length} 个文件`;
+                        setTimeout(() => {
+                            progressContainer.style.display = 'none';
+                            progressFill.style.width = '0%';
+                            progressText.textContent = '0%';
+                        }, 2000);
+                    }
+                } catch (err) {
+                    showError('发送失败：' + err.message);
+                }
+            };
+            
+            reader.onerror = () => {
+                showError(`读取文件 "${file.name}" 失败`);
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        fileInput.value = '';
+    });
+
+    document.getElementById('joinRoomInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('joinRoomBtn').click();
+        }
+    });
+
+    connect();
 </script>
 </body>
 </html>
